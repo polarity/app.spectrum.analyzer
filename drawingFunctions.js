@@ -1,9 +1,10 @@
 import { analyser, audioContext, bufferLength, dataArray, windowFunction, rmsHistory, rmsDataArray } from './audioSetup.js';
 import { applySlopeWeighting, updateRMSHistory, getThresholdValue, getThresholdDb } from './audioProcessing.js';
-import { logScale, getNoteWithCents, peakColor, rmsColor, labelColor, calibrateFrequency } from './utils.js';
+import { logScale, getNoteWithCents, peakColor, peakBackgroundColor, rmsColor, labelColor, labelBackgroundColor, labelTextColor, frequencyLineColor, calibrateFrequency } from './utils.js';
 
 let smoothedPeaks = [];
 let labelPositions = [];
+let smoothedLabelPositions = [];
 
 export function resizeCanvas(canvas) {
   const controlsContent = document.getElementById('controls-content');
@@ -12,7 +13,6 @@ export function resizeCanvas(canvas) {
   canvas.width = window.innerWidth;
   canvas.height = isControlsVisible ? window.innerHeight * 0.7 : window.innerHeight * 0.8;
 }
-
 
 export function draw(ctx, canvas) {
   requestAnimationFrame(() => draw(ctx, canvas));
@@ -43,7 +43,7 @@ export function draw(ctx, canvas) {
   ctx.fillStyle = 'rgb(0, 0, 0)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawSpectrum(ctx, canvas, dataArray, peakColor);
+  drawSpectrum(ctx, canvas, dataArray, peakColor, peakBackgroundColor);
   drawSpectrum(ctx, canvas, rmsDataArray, rmsColor);
   const peakFrequencies = findPeaks(rmsDataArray, bufferLength);
   updateSmoothedPeaksAndLabelPositions(peakFrequencies);
@@ -53,7 +53,25 @@ export function draw(ctx, canvas) {
   drawFrequencyGuide(ctx, canvas);
 }
 
-function drawSpectrum(ctx, canvas, dataArray, color) {
+function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
+  // Zeichne zuerst den Hintergrund
+  if (backgroundColor) {
+    ctx.fillStyle = backgroundColor;
+    for (let i = 0; i < bufferLength; i++) {
+      const x = logScale(i / bufferLength, bufferLength) * canvas.width;
+      const y = canvas.height - (dataArray[i] / 256) * canvas.height;
+      if (i === 0) {
+        ctx.moveTo(x, canvas.height);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Zeichne dann die Linie
   ctx.beginPath();
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
@@ -92,19 +110,18 @@ function findPeaks(dataArray, bufferLength) {
 function updateSmoothedPeaksAndLabelPositions(peakFrequencies) {
   if (smoothedPeaks.length === 0) {
     smoothedPeaks = peakFrequencies.map(peak => ({ ...peak }));
-    labelPositions = peakFrequencies.map(peak => logScale(peak.index / bufferLength, bufferLength));
+    smoothedLabelPositions = peakFrequencies.map(peak => logScale(peak.index / bufferLength, bufferLength));
   } else {
     smoothedPeaks = peakFrequencies.map((peak, i) => {
       const smoothedPeak = smoothedPeaks[i] || { index: peak.index, value: 0 };
       return {
-        index: smoothedPeak.index * 0.9 + peak.index * 0.1,
-        value: smoothedPeak.value * 0.9 + peak.value * 0.1
+        index: peak.index, // Nicht glätten, um Echtzeit-Reaktion zu ermöglichen
+        value: peak.value  // Nicht glätten, um Echtzeit-Reaktion zu ermöglichen
       };
     });
-    labelPositions = peakFrequencies.map((peak, i) => {
-      const pos = labelPositions[i] || logScale(peak.index / bufferLength, bufferLength);
-      const targetPos = logScale(peak.index / bufferLength, bufferLength);
-      return pos * 0.9 + targetPos * 0.1;
+    smoothedLabelPositions = smoothedLabelPositions.map((pos, i) => {
+      const targetPos = peakFrequencies[i] ? logScale(peakFrequencies[i].index / bufferLength, bufferLength) : pos;
+      return pos * 0.95 + targetPos * 0.05; // Langsame Glättung für die Labels
     });
   }
 }
@@ -126,7 +143,7 @@ function interpolateFrequency(peak, dataArray, sampleRate, fftSize) {
 function drawLabels(ctx, canvas, smoothedPeaks, labelPositions) {
   ctx.font = '12px Arial';
   const thresholdValue = getThresholdValue();
-  const sortedPeaks = sortPeaks(smoothedPeaks, labelPositions);
+  const sortedPeaks = sortPeaks(smoothedPeaks, smoothedLabelPositions);
  
   // Select only peaks above the threshold
   const labelsToShow = sortedPeaks.filter(peak => peak.value > thresholdValue).slice(0, 4);
@@ -134,7 +151,6 @@ function drawLabels(ctx, canvas, smoothedPeaks, labelPositions) {
     drawSingleLabel(ctx, canvas, peak, index, thresholdValue);
   });
 }
-
 
 function drawSingleLabel(ctx, canvas, peak, index, thresholdValue) {
   let frequency = interpolateFrequency(peak, rmsDataArray, audioContext.sampleRate, analyser.fftSize);
@@ -155,12 +171,12 @@ function drawSingleLabel(ctx, canvas, peak, index, thresholdValue) {
 }
 
 function drawLabelBackground(ctx, labelX, labelY, labelWidth, isAboveThreshold) {
-  ctx.fillStyle = isAboveThreshold ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+  ctx.fillStyle = labelBackgroundColor;
   ctx.fillRect(labelX - labelWidth / 2, labelY - 10, labelWidth, 20);
 }
 
 function drawLabelText(ctx, labelText, labelX, labelY) {
-  ctx.fillStyle = labelColor;
+  ctx.fillStyle = labelTextColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(labelText, labelX, labelY);
@@ -170,13 +186,13 @@ function drawLineToFrequency(ctx, labelX, labelY, peakX, peakY, isAboveThreshold
   ctx.beginPath();
   ctx.moveTo(labelX, labelY + 10);
   ctx.lineTo(peakX, peakY);
-  ctx.strokeStyle = isAboveThreshold ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+  ctx.strokeStyle = frequencyLineColor;
   ctx.stroke();
 }
 
 function drawThresholdLine(ctx, canvas) {
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
   ctx.lineWidth = 1;
   const thresholdValue = getThresholdValue();
   // Convert threshold value to canvas Y coordinate

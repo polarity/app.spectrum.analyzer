@@ -1,6 +1,10 @@
-export let peakColor = '#FF4136';
-export let rmsColor = '#39CCCC';
-export let labelColor = '#FFFFFF';
+export let peakColor = '#888888';
+export let peakBackgroundColor = '#88888833';
+export let rmsColor = '#ffbf00';
+export let labelColor = '#ffffff';
+export let labelBackgroundColor = '#0069a8';
+export let labelTextColor = '#ffffff';
+export let frequencyLineColor = '#0069a8';
 
 export function setPeakColor(color) {
   peakColor = color;
@@ -73,4 +77,20 @@ export function calibrateFrequency(frequency) {
 
   // This should never happen, but just in case
   return frequency;
+}
+
+export function setLabelBackgroundColor(color) {
+  labelBackgroundColor = color;
+}
+
+export function setLabelTextColor(color) {
+  labelTextColor = color;
+}
+
+export function setFrequencyLineColor(color) {
+  frequencyLineColor = color;
+}
+
+export function setPeakBackgroundColor(color) {
+  peakBackgroundColor = color;
 }

@@ -6,7 +6,10 @@ import {
   getRmsWindowSize, setRmsWindowSize, 
   getSlopeWeight, setSlopeWeight 
 } from './audioProcessing.js';
-import { peakColor, rmsColor, labelColor, setPeakColor, setRmsColor, setLabelColor } from './utils.js';
+import { 
+  peakColor, peakBackgroundColor, rmsColor, labelColor, labelBackgroundColor, labelTextColor, frequencyLineColor,
+  setPeakColor, setPeakBackgroundColor, setRmsColor, setLabelColor, setLabelBackgroundColor, setLabelTextColor, setFrequencyLineColor
+} from './utils.js';
 
 let canvas, ctx;
 
@@ -35,9 +38,24 @@ async function init() {
   addSlider('slopeWeight', 'Slope Weight', 0, 6, getSlopeWeight(), value => {
     setSlopeWeight(parseFloat(value));
   });
-  addColorPicker('peakColor', 'Peak Color', peakColor, value => setPeakColor(value));
-  addColorPicker('rmsColor', 'RMS Color', rmsColor, value => setRmsColor(value));
-  addColorPicker('labelColor', 'Label Color', labelColor, value => setLabelColor(value));
+
+  // Function to add color picker and set initial color
+  function addColorPickerWithInitialColor(id, label, initialColor, setColorFunction) {
+    const hexColor = rgba2hex(initialColor);
+    addColorPicker(id, label, hexColor.slice(0, 7), value => {
+      setColorFunction(value);
+    });
+    setColorFunction(initialColor);
+  }
+
+  // Add color pickers and set initial colors
+  addColorPickerWithInitialColor('peakColor', 'Peak Color', peakColor, setPeakColor);
+  addColorPickerWithInitialColor('peakBackgroundColor', 'Peak Background Color', peakBackgroundColor, setPeakBackgroundColor);
+  addColorPickerWithInitialColor('rmsColor', 'RMS Color', rmsColor, setRmsColor);
+  addColorPickerWithInitialColor('labelColor', 'Label Color', labelColor, setLabelColor);
+  addColorPickerWithInitialColor('labelBackgroundColor', 'Label Background Color', labelBackgroundColor, setLabelBackgroundColor);
+  addColorPickerWithInitialColor('labelTextColor', 'Label Text Color', labelTextColor, setLabelTextColor);
+  addColorPickerWithInitialColor('frequencyLineColor', 'Frequency Line Color', frequencyLineColor, setFrequencyLineColor);
 
   // Add toggle functionality for controls
   const toggleButton = document.getElementById('controls-toggle');
@@ -52,4 +70,18 @@ async function init() {
   startButton.addEventListener('click', () => {
     draw(ctx, canvas);
   });
+}
+
+// Hilfsfunktion zur Konvertierung von rgba zu Hex
+function rgba2hex(color) {
+  if (color.startsWith('#')) {
+    // Wenn es bereits ein Hex-Wert ist, fügen Sie die Opazität hinzu, falls nötig
+    return color.length === 7 ? color + 'ff' : color;
+  }
+  const rgb = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/);
+  return rgb ? "#" + 
+    ("0" + parseInt(rgb[1], 10).toString(16)).slice(-2) +
+    ("0" + parseInt(rgb[2], 10).toString(16)).slice(-2) +
+    ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) +
+    (rgb[4] ? ("0" + Math.round(parseFloat(rgb[4]) * 255).toString(16)).slice(-2) : "ff") : color;
 }
