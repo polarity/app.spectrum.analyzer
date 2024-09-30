@@ -47,6 +47,9 @@ async function init() {
     resizeCanvas(canvas);
   });
 
-  // Start drawing
-  draw(ctx, canvas);
+  // Start drawing when the "Start Audio Analysis" button is clicked
+  const startButton = document.getElementById('controls-start-button');
+  startButton.addEventListener('click', () => {
+    draw(ctx, canvas);
+  });
 }

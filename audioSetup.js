@@ -5,16 +5,6 @@ export let rmsHistory;
 export let rmsDataArray;
 
 export async function setupAudio() {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  console.log('Sample rate:', audioContext.sampleRate);
-  analyser = audioContext.createAnalyser();
-  const fftSize = 8192; // possible values: 2048, 4096, 8192, 16384
-  analyser.fftSize = fftSize;
-  bufferLength = analyser.frequencyBinCount;
-  dataArray = new Uint8Array(bufferLength);
-  rmsDataArray = new Uint8Array(bufferLength);
-  rmsHistory = Array(bufferLength).fill().map(() => []);
-
   const devices = await navigator.mediaDevices.enumerateDevices();
   const audioInputs = devices.filter(device => device.kind === 'audioinput');
 
@@ -34,13 +24,32 @@ export async function setupAudio() {
   select.addEventListener('change', async () => {
     const selectedDeviceId = select.value;
     localStorage.setItem('selectedAudioDevice', selectedDeviceId);
-    await connectToAudioInput(selectedDeviceId);
+    await initializeAudioContext(selectedDeviceId);
   });
 
-  await connectToAudioInput(select.value);
+  // Add a start button to initialize audio context
+  const startButton = document.getElementById('controls-start-button');
+  startButton.addEventListener('click', async () => {
+    await initializeAudioContext(select.value);
+    startButton.disabled = true;
+  });
 }
 
-export async function connectToAudioInput(deviceId) {
+async function initializeAudioContext(deviceId) {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  console.log('Sample rate:', audioContext.sampleRate);
+  analyser = audioContext.createAnalyser();
+  const fftSize = 8192; // possible values: 2048, 4096, 8192, 16384
+  analyser.fftSize = fftSize;
+  bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+  rmsDataArray = new Uint8Array(bufferLength);
+  rmsHistory = Array(bufferLength).fill().map(() => []);
+
+  await connectToAudioInput(deviceId);
+}
+
+async function connectToAudioInput(deviceId) {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { deviceId: deviceId }
   });
