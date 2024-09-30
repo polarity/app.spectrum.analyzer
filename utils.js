@@ -1,6 +1,18 @@
-export const peakColor = '#ff3232';
-export const rmsColor = 'rgba(0, 255, 0, 0.5)';
-export const labelColor = '#ffffff';
+export let peakColor = '#FF4136';
+export let rmsColor = '#39CCCC';
+export let labelColor = '#FFFFFF';
+
+export function setPeakColor(color) {
+  peakColor = color;
+}
+
+export function setRmsColor(color) {
+  rmsColor = color;
+}
+
+export function setLabelColor(color) {
+  labelColor = color;
+}
 
 export function logScale(index, bufferLength) {
   const logmin = Math.log(1);
@@ -10,14 +22,55 @@ export function logScale(index, bufferLength) {
 }
 
 export function getNoteWithCents(frequency) {
-  if (frequency <= 0) return 'N/A';
+  if (frequency <= 0) return { note: 'N/A', cents: 0 };
+  const A4 = 440;
+  const C0 = A4 * Math.pow(2, -4.75);
   const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  const noteIndex = Math.round(12 * (Math.log2(frequency / 440) + 4));
-  const octave = Math.floor(noteIndex / 12);
-  const note = notes[noteIndex % 12] + octave;
+  const halfSteps = 12 * Math.log2(frequency / C0);
+  const octave = Math.floor(halfSteps / 12);
+  const noteIndex = Math.round(halfSteps) % 12;
+  const note = notes[noteIndex] + octave;
   
-  const exactFrequency = 440 * Math.pow(2, (noteIndex - 57) / 12);
+  const exactFrequency = C0 * Math.pow(2, Math.floor(halfSteps) / 12);
   const cents = 1200 * Math.log2(frequency / exactFrequency);
   
-  return `${note} (${cents.toFixed(0)} cents)`;
+  return { note, cents };
+}
+
+// Calibration points: [measured, actual]
+const calibrationPoints = [
+  [41, 40],
+  [3000, 3000]
+];
+
+export function calibrateFrequency(frequency) {
+  // Sort calibration points by measured frequency
+  const sortedPoints = calibrationPoints.sort((a, b) => a[0] - b[0]);
+
+  // If frequency is below the first calibration point
+  if (frequency <= sortedPoints[0][0]) {
+    const [x1, y1] = sortedPoints[0];
+    return (frequency / x1) * y1;
+  }
+
+  // If frequency is above the last calibration point
+  if (frequency >= sortedPoints[sortedPoints.length - 1][0]) {
+    const [x1, y1] = sortedPoints[sortedPoints.length - 1];
+    return (frequency / x1) * y1;
+  }
+
+  // Find the two calibration points to interpolate between
+  for (let i = 0; i < sortedPoints.length - 1; i++) {
+    const [x1, y1] = sortedPoints[i];
+    const [x2, y2] = sortedPoints[i + 1];
+
+    if (frequency >= x1 && frequency <= x2) {
+      // Linear interpolation
+      const ratio = (frequency - x1) / (x2 - x1);
+      return y1 + ratio * (y2 - y1);
+    }
+  }
+
+  // This should never happen, but just in case
+  return frequency;
 }

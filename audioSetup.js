@@ -1,12 +1,15 @@
 import { getRmsWindowSize } from './audioProcessing.js';
 
-let audioContext, analyser, bufferLength, dataArray, rmsDataArray;
+let audioContext, analyser, bufferLength, dataArray;
 export let rmsHistory;
+export let rmsDataArray;
 
 export async function setupAudio() {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  console.log('Sample rate:', audioContext.sampleRate);
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 2048;
+  const fftSize = 8192; // possible values: 2048, 4096, 8192, 16384
+  analyser.fftSize = fftSize;
   bufferLength = analyser.frequencyBinCount;
   dataArray = new Uint8Array(bufferLength);
   rmsDataArray = new Uint8Array(bufferLength);
@@ -45,4 +48,10 @@ export async function connectToAudioInput(deviceId) {
   source.connect(analyser);
 }
 
-export { audioContext, analyser, bufferLength, dataArray, rmsDataArray };
+const windowFunction = new Float32Array(8192);
+
+for (let i = 0; i < 8192; i++) {
+  windowFunction[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / 8192));
+}
+
+export { analyser, audioContext, bufferLength, dataArray, windowFunction };

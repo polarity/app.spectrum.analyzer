@@ -1,3 +1,5 @@
+import { setThresholdDb, getThresholdDb } from './audioProcessing.js';
+
 export function addSlider(id, label, min, max, value, onChange) {
   const container = document.createElement('div');
   container.style.margin = '10px 0';
@@ -30,4 +32,12 @@ export function addColorPicker(id, label, defaultColor, onChange) {
   container.appendChild(labelElement);
   container.appendChild(picker);
   document.getElementById('controls-content').appendChild(container);
+}
+
+export function initializeThresholdSlider() {
+  const initialThresholdDb = getThresholdDb();
+  addSlider('threshold', 'Threshold', -30, 0, initialThresholdDb, (value) => {
+    const dbValue = parseFloat(value);
+    setThresholdDb(dbValue);
+  });
 }

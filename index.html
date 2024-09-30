@@ -3,55 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spektrumanalysator</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 80vh;
-        }
-        #controls {
-            background-color: #2a2a2a;
-            padding: 10px;
-            border-top: 1px solid #444;
-        }
-        #controls-toggle {
-            background-color: #444;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            width: 100%;
-            text-align: left;
-        }
-        #controls-content {
-            display: none;
-            padding-top: 10px;
-        }
-        #controls-content.visible {
-            display: block;
-        }
-        select, input[type="range"], input[type="color"] {
-            display: block;
-            margin: 10px 0;
-            width: 100%;
-        }
-    </style>
+    <title>Spectrum Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- open graph tags -->
+    <meta property="og:title" content="Spectrum Analyzer" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://spectrum.polarity.me" />
+    <meta property="og:image" content="/spectrum-image.png" />
+    <meta property="og:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum." />
+    <meta property="og:site_name" content="Polarity Music" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- twitter tags -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@polaritymusic" />
+    <meta name="twitter:title" content="Spectrum Analyzer" />
+    <meta name="twitter:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum." />
+    <meta name="twitter:image" content="/spectrum-image.png" />
+
+    <!-- general tags -->
+    <meta name="description" content="Spectrum Analyzer">
+    <meta name="keywords" content="Spectrum Analyzer, Audio, Visualization">
+    <meta name="author" content="polarity">
+
+    <!-- favicon -->
+    <link rel="apple-touch-icon" sizes="256x256" href="/icons/spectrum-256.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="/icons/spectrum-128.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="/icons/spectrum-64.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/spectrum-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/spectrum-16.png">
+    
+    <!-- mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 </head>
 <body>
     <canvas id="analyzer"></canvas>
     <div id="controls">
-        <button id="controls-toggle">Steuerelemente anzeigen/ausblenden</button>
+        <button id="controls-toggle">Show Controls</button>
         <div id="controls-content">
             <select id="audioInput"></select>
-            <!-- UI-Elemente werden hier dynamisch hinzugefügt -->
+            <!-- UI elements will be added here dynamically -->
         </div>
     </div>
     <script type="module" src="main.js"></script>

@@ -2,7 +2,7 @@
 let audioContext, analyser, canvas, ctx, dataArray, bufferLength;
 let slowDataArray, rmsDataArray;
 let slopeWeight = 3; // 3dB/oct slope weighting
-const slowLineDecayFactor = 0.98;
+const slowLineDecayFactor = 0.98; // this is the decay factor for the slow line
 let rmsWindowSize = 400; // Default RMS window size in ms
 let rmsHistory = [];
 
@@ -12,9 +12,8 @@ let rmsColor = 'rgba(0, 255, 0, 0.5)';
 let slowLineColor = '#ffff00';
 let labelColor = '#ffffff';
 
-// Neue Variablen für den Threshold
-let thresholdDb = -60; // Standardwert in dB
-let thresholdValue = 0; // Wird später berechnet
+let thresholdDb = -60; // Default threshold value in dB
+let thresholdValue = 0; // Default threshold value in linear scale
 
 // Function to get note from frequency
 function getNoteWithCents(frequency) {
@@ -87,7 +86,7 @@ async function setupAudio() {
   // Add threshold slider
   addSlider('threshold', 'Threshold', -100, 0, thresholdDb, value => {
     thresholdDb = parseFloat(value);
-    thresholdValue = Math.pow(10, thresholdDb / 20) * 255; // Umrechnung von dB in 0-255 Bereich
+    thresholdValue = Math.pow(10, thresholdDb / 20) * 255; // convert dB to linear scale
   });
 
   // Add color pickers
@@ -147,7 +146,7 @@ function calculateRMS(array) {
   return Math.sqrt(array.reduce((acc, val) => acc + val * val, 0) / array.length);
 }
 
-// Globale Variablen für die geglätteten Peaks und Label-Positionen
+// global variables 
 let smoothedPeaks = []
 let labelPositions = []
 
