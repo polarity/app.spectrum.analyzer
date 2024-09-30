@@ -226,20 +226,3 @@ function drawAverageLine(ctx, canvas) {
   ctx.textAlign = 'left';
   ctx.fillText(`Avg: ${avgDb.toFixed(2)} dB`, 10, avgY - 5);
 }
-
-// Check if mediaDevices is available
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    // mediaDevices is available
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(function(stream) {
-            // Stream successfully obtained
-            console.log('Media stream obtained:', stream);
-        })
-        .catch(function(error) {
-            // Error obtaining the stream
-            console.error('Error accessing media devices:', error);
-        });
-} else {
-    // mediaDevices is not available
-    console.error('navigator.mediaDevices is not available');
-}
