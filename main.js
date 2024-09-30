@@ -72,10 +72,14 @@ async function init() {
   });
 }
 
-// Hilfsfunktion zur Konvertierung von rgba zu Hex
+/**
+ * Helper function to convert RGBA color to hex
+ * @param {*} color 
+ * @returns 
+ */
 function rgba2hex(color) {
   if (color.startsWith('#')) {
-    // Wenn es bereits ein Hex-Wert ist, fügen Sie die Opazität hinzu, falls nötig
+    // when color is already hex, add ff to make it rgba
     return color.length === 7 ? color + 'ff' : color;
   }
   const rgb = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/);

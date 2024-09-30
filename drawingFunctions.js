@@ -54,7 +54,6 @@ export function draw(ctx, canvas) {
 }
 
 function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
-  // Zeichne zuerst den Hintergrund
   if (backgroundColor) {
     ctx.fillStyle = backgroundColor;
     for (let i = 0; i < bufferLength; i++) {
@@ -71,7 +70,6 @@ function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
     ctx.fill();
   }
 
-  // Zeichne dann die Linie
   ctx.beginPath();
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
@@ -115,13 +113,13 @@ function updateSmoothedPeaksAndLabelPositions(peakFrequencies) {
     smoothedPeaks = peakFrequencies.map((peak, i) => {
       const smoothedPeak = smoothedPeaks[i] || { index: peak.index, value: 0 };
       return {
-        index: peak.index, // Nicht glätten, um Echtzeit-Reaktion zu ermöglichen
-        value: peak.value  // Nicht glätten, um Echtzeit-Reaktion zu ermöglichen
+        index: peak.index,
+        value: peak.value
       };
     });
     smoothedLabelPositions = smoothedLabelPositions.map((pos, i) => {
       const targetPos = peakFrequencies[i] ? logScale(peakFrequencies[i].index / bufferLength, bufferLength) : pos;
-      return pos * 0.95 + targetPos * 0.05; // Langsame Glättung für die Labels
+      return pos * 0.95 + targetPos * 0.05;
     });
   }
 }

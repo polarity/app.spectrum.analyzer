@@ -1,4 +1,5 @@
 # Spectrum Analyzer
+Try it out [on the web: Demo](https://spectrum.polarity.me)
 
 ## Description
 This Spectrum Analyzer is a web-based application that visualizes the frequency spectrum of audio inputs in real-time. It offers an interactive and customizable display of audio frequencies, ideal for musicians, sound engineers, or anyone interested in audio analysis.

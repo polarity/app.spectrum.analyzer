@@ -1,7 +1,7 @@
 {
-  "name": "spektrumanalysator",
+  "name": "browser-spectrum",
   "version": "1.0.0",
-  "description": "Ein Spektrumanalysator für Audiodaten",
+  "description": "Spectrum analyzer for audio analysis in the browser",
   "main": "main.js",
   "scripts": {
     "start": "http-server -c-1"
