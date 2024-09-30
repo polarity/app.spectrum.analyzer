@@ -5,6 +5,18 @@ body {
   color: #ffffff;
   font-family: Arial, sans-serif;
 }
+#content {
+  padding: 10px;
+}
+a, a:link, a:visited, a:active {
+  color: #03afd9;
+  text-decoration: none;
+}
+a:hover {
+  color: #99e6fa;
+  text-decoration: underline;
+}
+
 canvas {
   display: block;
   width: 100%;
