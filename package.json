@@ -4,7 +4,9 @@
   "description": "Spectrum analyzer for audio analysis in the browser",
   "main": "main.js",
   "scripts": {
-    "start": "http-server -c-1"
+    "start": "http-server -c-1",
+    "lint": "standard",
+    "lint:fix": "standard --fix"
   },
   "keywords": [
     "audio",
@@ -15,5 +17,14 @@
   "license": "MIT",
   "dependencies": {
     "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "standard": "^17.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "/node_modules/",
+      "/dist/"
+    ]
   }
 }
