@@ -6,6 +6,12 @@ let smoothedPeaks = [];
 let labelPositions = [];
 let smoothedLabelPositions = [];
 
+/**
+ * Resizes the canvas based on the window size and controls visibility.
+ * This function ensures that the canvas always fits the available screen space.
+ * 
+ * @param {HTMLCanvasElement} canvas - The canvas element to be resized
+ */
 export function resizeCanvas(canvas) {
   const controlsContent = document.getElementById('controls-content');
   const isControlsVisible = controlsContent.classList.contains('visible');
@@ -14,6 +20,14 @@ export function resizeCanvas(canvas) {
   canvas.height = isControlsVisible ? window.innerHeight * 0.7 : window.innerHeight * 0.8;
 }
 
+/**
+ * Main drawing function that updates and renders the audio visualization.
+ * This function is called recursively using requestAnimationFrame to create a smooth animation.
+ * It handles canvas resizing, data processing, and calls various drawing functions.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ */
 export function draw(ctx, canvas) {
   requestAnimationFrame(() => draw(ctx, canvas));
   
@@ -29,7 +43,7 @@ export function draw(ctx, canvas) {
 
   analyser.getByteTimeDomainData(dataArray);
   
-  // Apply window function
+  // Apply window function to reduce spectral leakage
   for (let i = 0; i < bufferLength; i++) {
     dataArray[i] *= windowFunction[i];
   }
@@ -53,6 +67,16 @@ export function draw(ctx, canvas) {
   drawFrequencyGuide(ctx, canvas);
 }
 
+/**
+ * Draws the spectrum on the canvas.
+ * This function can draw both the instantaneous spectrum and the RMS spectrum.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ * @param {Uint8Array} dataArray - The array containing spectrum data
+ * @param {string} color - The color to use for the spectrum line
+ * @param {string} [backgroundColor] - Optional background color for the spectrum area
+ */
 function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
   if (backgroundColor) {
     ctx.fillStyle = backgroundColor;
@@ -85,6 +109,14 @@ function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
   ctx.stroke();
 }
 
+/**
+ * Finds peaks in the spectrum data.
+ * This function identifies local maxima in the data array that meet certain criteria.
+ * 
+ * @param {Uint8Array} dataArray - The array containing spectrum data
+ * @param {number} bufferLength - The length of the data array
+ * @returns {Array<Object>} An array of peak objects, each containing an index and value
+ */
 function findPeaks(dataArray, bufferLength) {
   let peaks = [];
   const minPeakHeight = 5; // Reduce minimum height if needed
@@ -105,6 +137,13 @@ function findPeaks(dataArray, bufferLength) {
   return peaks.sort((a, b) => b.value - a.value).slice(0, 12);
 }
 
+/**
+ * Updates the smoothed peaks and label positions.
+ * This function provides a smooth transition for peak positions and labels,
+ * preventing abrupt changes in the visualization.
+ * 
+ * @param {Array<Object>} peakFrequencies - The current peak frequencies detected
+ */
 function updateSmoothedPeaksAndLabelPositions(peakFrequencies) {
   if (smoothedPeaks.length === 0) {
     smoothedPeaks = peakFrequencies.map(peak => ({ ...peak }));
@@ -124,12 +163,30 @@ function updateSmoothedPeaksAndLabelPositions(peakFrequencies) {
   }
 }
 
+/**
+ * Sorts peaks based on their amplitude.
+ * This function is used to determine which peaks should be labeled.
+ * 
+ * @param {Array<Object>} smoothedPeaks - The array of smoothed peak objects
+ * @param {Array<number>} labelPositions - The array of label positions
+ * @returns {Array<Object>} Sorted array of peak objects with label positions
+ */
 function sortPeaks(smoothedPeaks, labelPositions) {
   return smoothedPeaks
     .map((peak, index) => ({ ...peak, labelPosition: labelPositions[index] }))
     .sort((a, b) => b.value - a.value);
 }
 
+/**
+ * Interpolates the exact frequency of a peak.
+ * This function improves frequency resolution by interpolating between FFT bins.
+ * 
+ * @param {Object} peak - The peak object containing index and value
+ * @param {Uint8Array} dataArray - The array containing spectrum data
+ * @param {number} sampleRate - The sample rate of the audio context
+ * @param {number} fftSize - The FFT size used in the analysis
+ * @returns {number} The interpolated frequency
+ */
 function interpolateFrequency(peak, dataArray, sampleRate, fftSize) {
   const leftValue = dataArray[peak.index - 1] || 0;
   const rightValue = dataArray[peak.index + 1] || 0;
@@ -138,6 +195,15 @@ function interpolateFrequency(peak, dataArray, sampleRate, fftSize) {
   return interpolatedIndex * sampleRate / fftSize;
 }
 
+/**
+ * Draws labels for the detected peaks.
+ * This function handles the rendering of frequency labels and their connecting lines.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ * @param {Array<Object>} smoothedPeaks - The array of smoothed peak objects
+ * @param {Array<number>} labelPositions - The array of label positions
+ */
 function drawLabels(ctx, canvas, smoothedPeaks, labelPositions) {
   ctx.font = '12px Arial';
   const thresholdValue = getThresholdValue();
@@ -150,6 +216,16 @@ function drawLabels(ctx, canvas, smoothedPeaks, labelPositions) {
   });
 }
 
+/**
+ * Draws a single label for a peak.
+ * This function handles the rendering of a single frequency label, its background, and connecting line.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ * @param {Object} peak - The peak object to label
+ * @param {number} index - The index of the peak in the sorted array
+ * @param {number} thresholdValue - The current threshold value
+ */
 function drawSingleLabel(ctx, canvas, peak, index, thresholdValue) {
   let frequency = interpolateFrequency(peak, rmsDataArray, audioContext.sampleRate, analyser.fftSize);
   frequency = calibrateFrequency(frequency);
@@ -168,11 +244,30 @@ function drawSingleLabel(ctx, canvas, peak, index, thresholdValue) {
   drawLineToFrequency(ctx, labelX, labelY, peakX, peakY, true);
 }
 
+/**
+ * Draws the background for a label.
+ * This function creates a background rectangle for better label visibility.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {number} labelX - The x-coordinate of the label
+ * @param {number} labelY - The y-coordinate of the label
+ * @param {number} labelWidth - The width of the label
+ * @param {boolean} isAboveThreshold - Whether the peak is above the threshold
+ */
 function drawLabelBackground(ctx, labelX, labelY, labelWidth, isAboveThreshold) {
   ctx.fillStyle = labelBackgroundColor;
   ctx.fillRect(labelX - labelWidth / 2, labelY - 10, labelWidth, 20);
 }
 
+/**
+ * Draws the text for a label.
+ * This function renders the actual text content of a frequency label.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {string} labelText - The text to be displayed in the label
+ * @param {number} labelX - The x-coordinate of the label
+ * @param {number} labelY - The y-coordinate of the label
+ */
 function drawLabelText(ctx, labelText, labelX, labelY) {
   ctx.fillStyle = labelTextColor;
   ctx.textAlign = 'center';
@@ -180,6 +275,17 @@ function drawLabelText(ctx, labelText, labelX, labelY) {
   ctx.fillText(labelText, labelX, labelY);
 }
 
+/**
+ * Draws a line connecting a label to its corresponding frequency peak.
+ * This function creates a visual link between the label and the spectrum.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {number} labelX - The x-coordinate of the label
+ * @param {number} labelY - The y-coordinate of the label
+ * @param {number} peakX - The x-coordinate of the peak on the spectrum
+ * @param {number} peakY - The y-coordinate of the peak on the spectrum
+ * @param {boolean} isAboveThreshold - Whether the peak is above the threshold
+ */
 function drawLineToFrequency(ctx, labelX, labelY, peakX, peakY, isAboveThreshold) {
   ctx.beginPath();
   ctx.moveTo(labelX, labelY + 10);
@@ -188,6 +294,13 @@ function drawLineToFrequency(ctx, labelX, labelY, peakX, peakY, isAboveThreshold
   ctx.stroke();
 }
 
+/**
+ * Draws the threshold line on the canvas.
+ * This function visualizes the current threshold level for peak detection.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ */
 function drawThresholdLine(ctx, canvas) {
   ctx.beginPath();
   ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
@@ -206,6 +319,13 @@ function drawThresholdLine(ctx, canvas) {
   ctx.fillText(`Threshold: ${getThresholdDb().toFixed(2)} dB`, 10, thresholdY - 5);
 }
 
+/**
+ * Draws frequency guide lines and labels on the canvas.
+ * This function adds reference frequency markers to aid in spectrum interpretation.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ */
 function drawFrequencyGuide(ctx, canvas) {
   const frequencies = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   ctx.fillStyle = labelColor;
@@ -222,6 +342,13 @@ function drawFrequencyGuide(ctx, canvas) {
   });
 }
 
+/**
+ * Draws the average level line on the canvas.
+ * This function visualizes the average amplitude level of the spectrum.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw on
+ */
 function drawAverageLine(ctx, canvas) {
   const avgValue = rmsDataArray.reduce((sum, value) => sum + value, 0) / rmsDataArray.length;
   const avgDb = 20 * Math.log10(avgValue / 255);

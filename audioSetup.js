@@ -4,6 +4,14 @@ let audioContext, analyser, bufferLength, dataArray;
 export let rmsHistory;
 export let rmsDataArray;
 
+/**
+ * Sets up the audio context and handles audio input selection.
+ * This function initializes the audio context, enumerates available audio devices,
+ * and creates a dropdown menu for selecting the audio input device.
+ * It also handles the start button to initialize the audio context.
+ * 
+ * @returns {void}
+ */
 export async function setupAudio() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   const audioInputs = devices.filter(device => device.kind === 'audioinput');
@@ -35,6 +43,13 @@ export async function setupAudio() {
   });
 }
 
+/**
+ * Initializes the audio context and sets up the audio processing.
+ * This function creates the audio context, sets up the analyser, and connects to the audio input device.
+ * 
+ * @param {string} deviceId - The ID of the audio input device to connect to.
+ * @returns {Promise<void>}
+ */
 async function initializeAudioContext(deviceId) {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
   console.log('Sample rate:', audioContext.sampleRate);
@@ -49,6 +64,13 @@ async function initializeAudioContext(deviceId) {
   await connectToAudioInput(deviceId);
 }
 
+/**
+ * Connects to the specified audio input device.
+ * This function uses the MediaDevices API to get user media and create a media stream source.
+ * 
+ * @param {string} deviceId - The ID of the audio input device to connect to.
+ * @returns {Promise<void>}
+ */
 async function connectToAudioInput(deviceId) {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { deviceId: deviceId }
@@ -57,6 +79,12 @@ async function connectToAudioInput(deviceId) {
   source.connect(analyser);
 }
 
+/**
+ * Creates a window function for frequency analysis.
+ * This function generates a cosine window function of length 8192.
+ * 
+ * @returns {Float32Array} The generated window function.
+ */
 const windowFunction = new Float32Array(8192);
 
 for (let i = 0; i < 8192; i++) {
