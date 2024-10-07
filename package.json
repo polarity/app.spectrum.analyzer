@@ -1,5 +1,5 @@
 {
-  "name": "browser-spectrum",
+  "name": "spectrum-analyzer",
   "version": "1.0.0",
   "description": "Spectrum analyzer for audio analysis in the browser",
   "main": "main.js",
@@ -13,7 +13,7 @@
     "spectrum",
     "analyzer"
   ],
-  "author": "Ihr Name",
+  "author": "Robert Agthe",
   "license": "MIT",
   "dependencies": {
     "http-server": "^14.1.1"
