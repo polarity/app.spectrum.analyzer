@@ -1,10 +1,28 @@
 import { analyser, audioContext, bufferLength, dataArray, windowFunction, rmsHistory, rmsDataArray } from './audioSetup.js';
 import { applySlopeWeighting, updateRMSHistory, getThresholdValue, getThresholdDb } from './audioProcessing.js';
-import { logScale, getNoteWithCents, peakColor, peakBackgroundColor, rmsColor, labelColor, labelBackgroundColor, labelTextColor, frequencyLineColor, calibrateFrequency } from './utils.js';
+import {
+  logScale,
+  getNoteWithCents,
+  peakColor,
+  peakBackgroundColor,
+  rmsColor,
+  labelColor,
+  labelBackgroundColor,
+  labelTextColor,
+  frequencyLineColor,
+  calibrateFrequency,
+  canvasBackgroundColor,
+  thresholdLineColor,
+  thresholdTextColor,
+  averageLineColor,
+  averageTextColor,
+  fontFamily
+} from './utils.js';
 
 let smoothedPeaks = [];
 let labelPositions = [];
 let smoothedLabelPositions = [];
+let isDrawing = false
 
 /**
  * Resizes the canvas based on the window size and controls visibility.
@@ -13,11 +31,10 @@ let smoothedLabelPositions = [];
  * @param {HTMLCanvasElement} canvas - The canvas element to be resized
  */
 export function resizeCanvas(canvas) {
-  const controlsContent = document.getElementById('controls-content');
-  const isControlsVisible = controlsContent.classList.contains('visible');
-  
-  canvas.width = window.innerWidth;
-  canvas.height = isControlsVisible ? window.innerHeight * 0.7 : window.innerHeight * 0.8;
+  const { width, height } = getCanvasSize(canvas)
+  canvas.style.height = `${height}px`
+  canvas.width = width
+  canvas.height = height
 }
 
 /**
@@ -29,42 +46,52 @@ export function resizeCanvas(canvas) {
  * @param {HTMLCanvasElement} canvas - The canvas element to draw on
  */
 export function draw(ctx, canvas) {
-  requestAnimationFrame(() => draw(ctx, canvas));
-  
-  // Check and update the Canvas size on every frame
-  if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight * 0.8) {
-    resizeCanvas(canvas);
-  }
-  
-  if (!rmsHistory) {
-    console.error('rmsHistory is not defined');
-    return;
+  if (isDrawing) {
+    return
   }
 
-  analyser.getByteTimeDomainData(dataArray);
+  isDrawing = true
+
+  function render() {
+    requestAnimationFrame(render)
   
-  // Apply window function to reduce spectral leakage
-  for (let i = 0; i < bufferLength; i++) {
-    dataArray[i] *= windowFunction[i];
+    // Check and update the Canvas size on every frame
+    const { width, height } = getCanvasSize(canvas)
+    if (canvas.width !== width || canvas.height !== height) {
+      resizeCanvas(canvas);
+    }
+  
+    if (!rmsHistory || !analyser || !dataArray) {
+      return
+    }
+
+    analyser.getByteTimeDomainData(dataArray);
+  
+    // Apply window function to reduce spectral leakage
+    for (let i = 0; i < bufferLength; i++) {
+      dataArray[i] *= windowFunction[i];
+    }
+  
+    analyser.getByteFrequencyData(dataArray);
+  
+    applySlopeWeighting(dataArray, bufferLength);
+    updateRMSHistory(dataArray, rmsHistory, rmsDataArray, bufferLength);
+
+    // Clear canvas
+    ctx.fillStyle = canvasBackgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawSpectrum(ctx, canvas, dataArray, peakColor, peakBackgroundColor);
+    drawSpectrum(ctx, canvas, rmsDataArray, rmsColor);
+    const peakFrequencies = findPeaks(rmsDataArray, bufferLength);
+    updateSmoothedPeaksAndLabelPositions(peakFrequencies);
+    drawLabels(ctx, canvas, smoothedPeaks, labelPositions);
+    drawThresholdLine(ctx, canvas);
+    drawAverageLine(ctx, canvas);
+    drawFrequencyGuide(ctx, canvas);
   }
-  
-  analyser.getByteFrequencyData(dataArray);
-  
-  applySlopeWeighting(dataArray, bufferLength);
-  updateRMSHistory(dataArray, rmsHistory, rmsDataArray, bufferLength);
 
-  // Clear canvas
-  ctx.fillStyle = 'rgb(0, 0, 0)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  drawSpectrum(ctx, canvas, dataArray, peakColor, peakBackgroundColor);
-  drawSpectrum(ctx, canvas, rmsDataArray, rmsColor);
-  const peakFrequencies = findPeaks(rmsDataArray, bufferLength);
-  updateSmoothedPeaksAndLabelPositions(peakFrequencies);
-  drawLabels(ctx, canvas, smoothedPeaks, labelPositions);
-  drawThresholdLine(ctx, canvas);
-  drawAverageLine(ctx, canvas);
-  drawFrequencyGuide(ctx, canvas);
+  render()
 }
 
 /**
@@ -79,6 +106,7 @@ export function draw(ctx, canvas) {
  */
 function drawSpectrum(ctx, canvas, dataArray, color, backgroundColor) {
   if (backgroundColor) {
+    ctx.beginPath();
     ctx.fillStyle = backgroundColor;
     for (let i = 0; i < bufferLength; i++) {
       const x = logScale(i / bufferLength, bufferLength) * canvas.width;
@@ -205,7 +233,7 @@ function interpolateFrequency(peak, dataArray, sampleRate, fftSize) {
  * @param {Array<number>} labelPositions - The array of label positions
  */
 function drawLabels(ctx, canvas, smoothedPeaks, labelPositions) {
-  ctx.font = '12px Arial';
+  ctx.font = `12px ${fontFamily}`;
   const thresholdValue = getThresholdValue();
   const sortedPeaks = sortPeaks(smoothedPeaks, smoothedLabelPositions);
  
@@ -303,7 +331,7 @@ function drawLineToFrequency(ctx, labelX, labelY, peakX, peakY, isAboveThreshold
  */
 function drawThresholdLine(ctx, canvas) {
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+  ctx.strokeStyle = thresholdLineColor;
   ctx.lineWidth = 1;
   const thresholdValue = getThresholdValue();
   // Convert threshold value to canvas Y coordinate
@@ -313,8 +341,8 @@ function drawThresholdLine(ctx, canvas) {
   ctx.stroke();
 
   // Add a label to show the threshold value in dB
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.font = '10px Arial';
+  ctx.fillStyle = thresholdTextColor;
+  ctx.font = `10px ${fontFamily}`;
   ctx.textAlign = 'left';
   ctx.fillText(`Threshold: ${getThresholdDb().toFixed(2)} dB`, 10, thresholdY - 5);
 }
@@ -329,7 +357,7 @@ function drawThresholdLine(ctx, canvas) {
 function drawFrequencyGuide(ctx, canvas) {
   const frequencies = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   ctx.fillStyle = labelColor;
-  ctx.font = '10px Arial';
+  ctx.font = `10px ${fontFamily}`;
   ctx.textAlign = 'center';
   
   frequencies.forEach(freq => {
@@ -338,6 +366,7 @@ function drawFrequencyGuide(ctx, canvas) {
     ctx.beginPath();
     ctx.moveTo(x, canvas.height - 20);
     ctx.lineTo(x, canvas.height);
+    ctx.strokeStyle = frequencyLineColor;
     ctx.stroke();
   });
 }
@@ -354,7 +383,7 @@ function drawAverageLine(ctx, canvas) {
   const avgDb = 20 * Math.log10(avgValue / 255);
   
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+  ctx.strokeStyle = averageLineColor;
   ctx.lineWidth = 1;
   const avgY = canvas.height - (avgValue / 255) * canvas.height;
   ctx.moveTo(0, avgY);
@@ -362,8 +391,19 @@ function drawAverageLine(ctx, canvas) {
   ctx.stroke();
 
   // Add a label to show the average value in dB
-  ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
-  ctx.font = '10px Arial';
+  ctx.fillStyle = averageTextColor;
+  ctx.font = `10px ${fontFamily}`;
   ctx.textAlign = 'left';
   ctx.fillText(`Avg: ${avgDb.toFixed(2)} dB`, 10, avgY - 5);
+}
+
+function getCanvasSize(canvas) {
+  const controlsContent = document.getElementById('controls-content')
+  const isControlsVisible = controlsContent.classList.contains('visible')
+  const frame = canvas.closest('.canvas-frame') || canvas.parentElement || canvas
+  const width = Math.max(320, Math.floor(frame.clientWidth || window.innerWidth))
+  const heightRatio = isControlsVisible ? 0.62 : 0.72
+  const height = Math.max(320, Math.floor(window.innerHeight * heightRatio))
+
+  return { width, height }
 }

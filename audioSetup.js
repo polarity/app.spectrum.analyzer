@@ -1,94 +1,264 @@
-import { getRmsWindowSize } from './audioProcessing.js';
+let audioContext
+let analyser
+let bufferLength
+let dataArray
+let currentStream
+let currentSource
+let selectedAudioInputId = ''
+let hasStarted = false
+let onAnalysisStarted = () => {}
 
-let audioContext, analyser, bufferLength, dataArray;
-export let rmsHistory;
-export let rmsDataArray;
+export let rmsHistory
+export let rmsDataArray
 
 /**
- * Sets up the audio context and handles audio input selection.
- * This function initializes the audio context, enumerates available audio devices,
- * and creates a dropdown menu for selecting the audio input device.
- * It also handles the start button to initialize the audio context.
- * 
- * @returns {void}
+ * Sets up audio-related UI events without requesting microphone access up front.
+ *
+ * @param {Function} handleAnalysisStarted - Callback invoked after a successful start or device switch
  */
-export async function setupAudio() {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const audioInputs = devices.filter(device => device.kind === 'audioinput');
+export function setupAudio(handleAnalysisStarted = () => {}) {
+  onAnalysisStarted = handleAnalysisStarted
 
-  const select = document.getElementById('audioInput');
-  audioInputs.forEach(input => {
-    const option = document.createElement('option');
-    option.value = input.deviceId;
-    option.text = input.label || `Mikrofon ${select.length + 1}`;
-    select.appendChild(option);
-  });
+  const select = document.getElementById('audioInput')
+  const startButton = document.getElementById('controls-start-button')
 
-  const savedDeviceId = localStorage.getItem('selectedAudioDevice');
-  if (savedDeviceId) {
-    select.value = savedDeviceId;
+  showStartButton()
+
+  select.addEventListener('change', () => {
+    handleAudioInputChange(select.value)
+  })
+
+  startButton.addEventListener('click', async () => {
+    startButton.disabled = true
+
+    try {
+      await startAnalyzing()
+    } catch (error) {
+      // startAnalyzing already logs and restores UI state
+    } finally {
+      startButton.disabled = false
+    }
+  })
+
+  navigator.mediaDevices.addEventListener('devicechange', () => {
+    if (hasStarted) {
+      updateAudioInputs()
+    }
+  })
+}
+
+/**
+ * Starts or restarts analysis with the provided device id.
+ *
+ * @param {string} [deviceId] - Requested audio input device id
+ * @returns {Promise<void>}
+ */
+export async function startAnalyzing(deviceId) {
+  if (typeof deviceId === 'string') {
+    selectedAudioInputId = deviceId
   }
 
-  select.addEventListener('change', async () => {
-    const selectedDeviceId = select.value;
-    localStorage.setItem('selectedAudioDevice', selectedDeviceId);
-    await initializeAudioContext(selectedDeviceId);
-  });
+  try {
+    await teardownAudio()
+    await initializeAudioContext()
 
-  // Add a start button to initialize audio context
-  const startButton = document.getElementById('controls-start-button');
-  startButton.addEventListener('click', async () => {
-    await initializeAudioContext(select.value);
-    startButton.disabled = true;
-  });
+    const stream = await getAudioStream()
+    currentStream = stream
+    currentSource = audioContext.createMediaStreamSource(stream)
+    currentSource.connect(analyser)
+
+    hasStarted = true
+    showAudioInputSelect()
+    await updateAudioInputs(stream)
+    onAnalysisStarted()
+  } catch (error) {
+    console.error('Error accessing audio stream:', error)
+    hasStarted = false
+    showStartButton()
+    throw error
+  }
 }
 
 /**
- * Initializes the audio context and sets up the audio processing.
- * This function creates the audio context, sets up the analyser, and connects to the audio input device.
- * 
- * @param {string} deviceId - The ID of the audio input device to connect to.
+ * Updates the available audio input list after permissions are granted.
+ *
+ * @param {MediaStream} [stream] - Current active audio stream
  * @returns {Promise<void>}
  */
-async function initializeAudioContext(deviceId) {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  console.log('Sample rate:', audioContext.sampleRate);
-  analyser = audioContext.createAnalyser();
-  const fftSize = 8192; // possible values: 2048, 4096, 8192, 16384
-  analyser.fftSize = fftSize;
-  bufferLength = analyser.frequencyBinCount;
-  dataArray = new Uint8Array(bufferLength);
-  rmsDataArray = new Uint8Array(bufferLength);
-  rmsHistory = Array(bufferLength).fill().map(() => []);
+export async function updateAudioInputs(stream = currentStream) {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const audioInputs = devices.filter(device => device.kind === 'audioinput')
+    const select = document.getElementById('audioInput')
+    const resolvedDeviceId = resolveSelectedAudioInputId(audioInputs, stream)
 
-  await connectToAudioInput(deviceId);
+    select.innerHTML = ''
+
+    select.appendChild(createOption('', 'Default'))
+
+    audioInputs.forEach((input, index) => {
+      const label = input.label || `Microphone ${index + 1}`
+      select.appendChild(createOption(input.deviceId, label))
+    })
+
+    select.value = resolvedDeviceId || ''
+    if (select.value !== (resolvedDeviceId || '')) {
+      select.value = ''
+    }
+  } catch (error) {
+    console.error('Error enumerating audio devices:', error)
+  }
 }
 
 /**
- * Connects to the specified audio input device.
- * This function uses the MediaDevices API to get user media and create a media stream source.
- * 
- * @param {string} deviceId - The ID of the audio input device to connect to.
- * @returns {Promise<void>}
+ * Handles a user-initiated audio device change.
+ *
+ * @param {string} deviceId - Selected device id
  */
-async function connectToAudioInput(deviceId) {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: deviceId }
-  });
-  const source = audioContext.createMediaStreamSource(stream);
-  source.connect(analyser);
+async function handleAudioInputChange(deviceId) {
+  const select = document.getElementById('audioInput')
+  select.disabled = true
+
+  try {
+    await startAnalyzing(deviceId)
+  } catch (error) {
+    // startAnalyzing already logs and restores UI state
+  } finally {
+    select.disabled = false
+  }
+}
+
+/**
+ * Initializes a fresh audio context and analyser chain.
+ */
+async function initializeAudioContext() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  analyser = audioContext.createAnalyser()
+  analyser.fftSize = 8192
+  bufferLength = analyser.frequencyBinCount
+  dataArray = new Uint8Array(bufferLength)
+  rmsDataArray = new Uint8Array(bufferLength)
+  rmsHistory = Array.from({ length: bufferLength }, () => [])
+}
+
+/**
+ * Requests a microphone stream for the currently selected device.
+ *
+ * @returns {Promise<MediaStream>} The active media stream
+ */
+async function getAudioStream() {
+  return navigator.mediaDevices.getUserMedia({
+    audio: getAudioConstraints()
+  })
+}
+
+/**
+ * Builds audio constraints for the current requested device.
+ *
+ * @returns {MediaTrackConstraints} Audio constraints
+ */
+function getAudioConstraints() {
+  if (selectedAudioInputId) {
+    return { deviceId: { exact: selectedAudioInputId } }
+  }
+
+  return true
+}
+
+/**
+ * Stops all active audio resources before reconnecting.
+ */
+async function teardownAudio() {
+  if (currentSource) {
+    currentSource.disconnect()
+    currentSource = null
+  }
+
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop())
+    currentStream = null
+  }
+
+  if (audioContext) {
+    await audioContext.close()
+    audioContext = null
+  }
+
+  analyser = null
+  bufferLength = 0
+  dataArray = null
+  rmsDataArray = null
+  rmsHistory = null
+}
+
+/**
+ * Resolves which device id should be shown as selected in the UI.
+ *
+ * @param {MediaDeviceInfo[]} audioInputs - Available audio input devices
+ * @param {MediaStream} [stream] - Current active audio stream
+ * @returns {string} The selected device id or empty string for default
+ */
+function resolveSelectedAudioInputId(audioInputs, stream) {
+  const availableDeviceIds = new Set(audioInputs.map(input => input.deviceId))
+  const activeTrack = stream ? stream.getAudioTracks()[0] : null
+  const activeDeviceId = activeTrack && activeTrack.getSettings
+    ? activeTrack.getSettings().deviceId
+    : ''
+
+  if (activeDeviceId && availableDeviceIds.has(activeDeviceId)) {
+    return activeDeviceId
+  }
+
+  if (selectedAudioInputId && availableDeviceIds.has(selectedAudioInputId)) {
+    return selectedAudioInputId
+  }
+
+  return ''
+}
+
+/**
+ * Shows the start button and hides the post-start audio selector.
+ */
+function showStartButton() {
+  const startButton = document.getElementById('controls-start-button')
+  const audioInputField = document.getElementById('audio-input-field')
+
+  startButton.classList.remove('is-hidden')
+  audioInputField.classList.add('is-hidden')
+}
+
+/**
+ * Keeps the start button visible and reveals the post-start audio selector.
+ */
+function showAudioInputSelect() {
+  const audioInputField = document.getElementById('audio-input-field')
+
+  audioInputField.classList.remove('is-hidden')
+}
+
+/**
+ * Creates an option element for the audio input selector.
+ *
+ * @param {string} value - Option value
+ * @param {string} text - Option label
+ * @returns {HTMLOptionElement} The option element
+ */
+function createOption(value, text) {
+  const option = document.createElement('option')
+  option.value = value
+  option.textContent = text
+  return option
 }
 
 /**
  * Creates a window function for frequency analysis.
- * This function generates a cosine window function of length 8192.
- * 
+ *
  * @returns {Float32Array} The generated window function.
  */
-const windowFunction = new Float32Array(8192);
+const windowFunction = new Float32Array(8192)
 
 for (let i = 0; i < 8192; i++) {
-  windowFunction[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / 8192));
+  windowFunction[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / 8192))
 }
 
-export { analyser, audioContext, bufferLength, dataArray, windowFunction };
+export { analyser, audioContext, bufferLength, dataArray, windowFunction }

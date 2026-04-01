@@ -8,7 +8,8 @@ import {
 } from './audioProcessing.js';
 import { 
   peakColor, peakBackgroundColor, rmsColor, labelColor, labelBackgroundColor, labelTextColor, frequencyLineColor,
-  setPeakColor, setPeakBackgroundColor, setRmsColor, setLabelColor, setLabelBackgroundColor, setLabelTextColor, setFrequencyLineColor
+  setPeakColor, setPeakBackgroundColor, setRmsColor, setLabelColor, setLabelBackgroundColor, setLabelTextColor, setFrequencyLineColor,
+  refreshThemeColors
 } from './utils.js';
 
 let canvas, ctx;
@@ -30,8 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * @async
  */
 async function init() {
-  // Set up audio processing
-  await setupAudio();
+  refreshThemeColors()
   
   // Get canvas and context for drawing
   canvas = document.getElementById('analyzer');
@@ -64,8 +64,10 @@ async function init() {
   // Add toggle functionality for controls
   setupControlsToggle();
 
-  // Set up start button for audio analysis
-  setupStartButton();
+  // Set up audio processing
+  setupAudio(() => {
+    draw(ctx, canvas)
+  });
 }
 
 /**
@@ -93,23 +95,19 @@ function addColorPickerWithInitialColor(id, label, initialColor, setColorFunctio
  */
 function setupControlsToggle() {
   const toggleButton = document.getElementById('controls-toggle');
-  const controlsContent = document.getElementById('controls-content');
+  syncControlsToggleState(false)
   toggleButton.addEventListener('click', () => {
-    controlsContent.classList.toggle('visible');
+    const controlsContent = document.getElementById('controls-content');
+    const isVisible = controlsContent.classList.toggle('visible');
+    syncControlsToggleState(isVisible)
     resizeCanvas(canvas);
   });
 }
 
-/**
- * Sets up the start button for audio analysis.
- * This function adds a click event listener to the start button to begin the audio analysis and visualization.
- * It's crucial for initiating the main functionality of the analyzer.
- */
-function setupStartButton() {
-  const startButton = document.getElementById('controls-start-button');
-  startButton.addEventListener('click', () => {
-    draw(ctx, canvas);
-  });
+function syncControlsToggleState(isVisible) {
+  const toggleButton = document.getElementById('controls-toggle')
+  toggleButton.textContent = isVisible ? 'Hide Controls' : 'Show Controls'
+  toggleButton.setAttribute('aria-expanded', String(isVisible))
 }
 
 /**

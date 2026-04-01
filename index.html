@@ -1,65 +1,77 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spectrum Analyzer</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Spectrum Analyzer</title>
+  <link rel="stylesheet" href="styles.css">
 
-    <!-- open graph tags -->
-    <meta property="og:title" content="Spectrum Analyzer" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://spectrum.polarity.me" />
-    <meta property="og:image" content="/spectrum-image.png" />
-    <meta property="og:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum." />
-    <meta property="og:site_name" content="Polarity Music" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="en_US" />
+  <!-- open graph tags -->
+  <meta property="og:title" content="Spectrum Analyzer">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://spectrum.polarity.me">
+  <meta property="og:image" content="/spectrum-image.png">
+  <meta property="og:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum.">
+  <meta property="og:site_name" content="Polarity Music">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="en_US">
 
-    <!-- twitter tags -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:site" content="@polaritymusic" />
-    <meta name="twitter:title" content="Spectrum Analyzer" />
-    <meta name="twitter:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum." />
-    <meta name="twitter:image" content="/spectrum-image.png" />
+  <!-- twitter tags -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@polaritymusic">
+  <meta name="twitter:title" content="Spectrum Analyzer">
+  <meta name="twitter:description" content="Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold to see the frequency spectrum.">
+  <meta name="twitter:image" content="/spectrum-image.png">
 
-    <!-- general tags -->
-    <meta name="description" content="Spectrum Analyzer">
-    <meta name="keywords" content="Spectrum Analyzer, Audio, Visualization">
-    <meta name="author" content="polarity">
+  <!-- general tags -->
+  <meta name="description" content="Spectrum Analyzer">
+  <meta name="keywords" content="Spectrum Analyzer, Audio, Visualization">
+  <meta name="author" content="polarity">
 
-    <!-- favicon -->
-    <link rel="apple-touch-icon" sizes="256x256" href="/icons/spectrum-256.png">
-    <link rel="icon" type="image/png" sizes="128x128" href="/icons/spectrum-128.png">
-    <link rel="icon" type="image/png" sizes="64x64" href="/icons/spectrum-64.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/spectrum-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/spectrum-16.png">
-    
-    <!-- mobile -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <!-- favicon -->
+  <link rel="apple-touch-icon" sizes="256x256" href="/icons/spectrum-256.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="/icons/spectrum-128.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/icons/spectrum-64.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/spectrum-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/spectrum-16.png">
 </head>
 <body>
-    <canvas id="analyzer"></canvas>
-    <div id="controls">
-        <button id="controls-start-button">Start Audio Analysis</button>
-        <button id="controls-toggle">Show Controls</button>
-        <div id="controls-content">
-            <select id="audioInput"></select>
-            <!-- UI elements will be added here dynamically -->
-        </div>
-    </div>
-    <div id="content">
-        <p>Spectrum Analyzer shows the frequency spectrum of the audio signal in real-time. Define an audio input and a threshold for note and frequency labels.</p>
-        <p>This is a prototype. If you have any feedback, please reach out to me.</p>
-    </div>
-    <footer >
-        <a href="https://bit.ly/3PgbxZz">Support me</a>
-        | <a href="https://github.com/polarity/app.vectorscope">Github</a> 
-        | <a href="https://polarity.me/">back to my site</a> 
-        | <a href="https://spectrum.polarity.me/">spectrum analyzer</a> 
-        | <a href="https://vectorscope.polarity.me/">vectorscope</a>
-    </footer>
+  <main id="app-shell">
+    <section id="analyzer-stage" aria-label="Spectrum analyzer canvas">
+      <div class="canvas-frame">
+        <canvas id="analyzer"></canvas>
+      </div>
+    </section>
 
-    <script type="module" src="main.js"></script>
+    <section class="panel-stack" aria-label="Analyzer controls">
+      <div id="controls">
+        <div class="controls-actions">
+          <button id="controls-start-button">Start Audio Analysis</button>
+          <button id="controls-toggle" aria-expanded="false" aria-controls="controls-content">Show Controls</button>
+          <div id="audio-input-field" class="is-hidden">
+            <label for="audioInput">Audio Input</label>
+            <select id="audioInput"></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="controls-content"></div>
+    </section>
+
+    <section id="content" class="surface-panel surface-panel--copy">
+      <p class="lede">Spectrum Analyzer visualizes live audio in realtime with peak and RMS overlays, note labels, and a logarithmic frequency view.</p>
+      <p>Choose an input device, start analysis, then dial in the threshold, smoothing, and color treatment for the display.</p>
+    </section>
+  </main>
+
+  <footer>
+    <a href="https://bit.ly/3PgbxZz">Support me</a>
+    | <a href="https://github.com/polarity/app.spectrum.analyzer">Github</a>
+    | <a href="https://polarity.me/">back to my site</a>
+    | <a href="https://spectrum.polarity.me/">spectrum analyzer</a>
+    | <a href="https://vectorscope.polarity.me/">vectorscope</a>
+  </footer>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>

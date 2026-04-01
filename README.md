@@ -1,48 +1,88 @@
 # Spectrum Analyzer
-Try it out [on the web: Demo](https://spectrum.polarity.me)
 
-## Description
-This Spectrum Analyzer is a web-based application that visualizes the frequency spectrum of audio inputs in real-time. It offers an interactive and customizable display of audio frequencies, ideal for musicians, sound engineers, or anyone interested in audio analysis.
+Spectrum Analyzer is a browser-based audio analysis app built with vanilla HTML, CSS, and JavaScript. It captures a live audio input, computes FFT data in the browser, and renders a realtime fullscreen spectrum on canvas.
 
-## Key Features
-- Real-time frequency analysis of audio inputs
-- Logarithmic frequency display
-- Peak and RMS spectrum visualization
-- Identification and display of dominant frequencies with corresponding note names
-- Adjustable settings for RMS window, slope weighting, and threshold
-- Customizable color interface
+Try it on the web: [Demo](https://spectrum.polarity.me)
+
+## Features
+
+- Realtime frequency spectrum rendering on canvas
+- Peak and RMS spectrum overlays
+- Dominant-frequency labels with note and cents estimation
+- Log-scaled frequency layout
+- Adjustable threshold, RMS window, and slope weighting
+- Live color customization for spectrum and labels
+- Audio input device selection with saved preference
+
+## Requirements
+
+- A modern browser with Web Audio support
+- Node.js and npm for the local static server
 
 ## Installation
-1. Ensure that [Node.js](https://nodejs.org/) is installed on your system.
-2. Clone this repository or download it.
-3. Open a terminal in the project directory.
-4. Run the following command to install dependencies:
-   ```
+
+1. Clone this repository.
+2. Move into the project directory.
+3. Install dependencies:
+
+   ```bash
    npm install
    ```
 
-## Usage
-1. Start the server with the command:
-   ```
+4. Start the local server:
+
+   ```bash
    npm start
    ```
-2. Open a web browser and navigate to `http://localhost:8080` (or the port displayed in the console).
-3. Allow the browser to access your microphone when prompted.
-4. Use the controls at the bottom of the screen to adjust the display.
 
-## Customization
-- RMS Window: Adjusts the smoothing of the RMS spectrum.
-- Slope Weighting: Changes the weighting of higher frequencies.
-- Threshold: Determines at what intensity frequencies are considered significant.
-- Color Settings: Customize colors for peak spectrum, RMS spectrum, and labels.
+5. Open the local URL printed by `http-server` (typically `http://localhost:8080`).
 
-## Technologies
-- HTML5 Canvas for visualization
-- Web Audio API for audio analysis
-- JavaScript ES6+ for logic and interactivity
+## Usage
+
+1. Open the app in your browser.
+2. Click `Start Audio Analysis`.
+3. Allow microphone access when prompted.
+4. Choose an input device if multiple microphones are available.
+5. Expand the controls panel to adjust threshold, RMS window, slope weighting, and colors.
+
+## Project Structure
+
+```text
+app.spectrum.analyzer/
+|- index.html
+|- styles.css
+|- main.js
+|- audioSetup.js
+|- audioProcessing.js
+|- drawingFunctions.js
+|- uiComponents.js
+|- utils.js
+|- docs/
+|  |- overview.md
+|  `- design-system.md
+|- .github/
+|  `- instructions/
+|- AGENTS.md
+|- README.md
+`- LICENSE
+```
+
+## Design Direction
+
+This app currently keeps a simple fullscreen analyzer layout. The intended next design pass is to align its colors, surfaces, and control styling with `app.vectorscope` so both tools feel like they come from the same vendor, while preserving the spectrum analyzer's wide full-screen presentation.
+
+See:
+
+- [`docs/overview.md`](docs/overview.md)
+- [`docs/design-system.md`](docs/design-system.md)
+- [`AGENTS.md`](AGENTS.md)
+
+## Development Notes
+
+- The app is served as a static site through `http-server`.
+- JavaScript follows StandardJS style.
+- There is currently no automated test suite; verify behavior manually in the browser.
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Contribution
-Contributions are welcome! Please open an issue to discuss major changes before submitting a pull request.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
