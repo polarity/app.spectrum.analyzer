@@ -398,12 +398,9 @@ function drawAverageLine(ctx, canvas) {
 }
 
 function getCanvasSize(canvas) {
-  const controlsContent = document.getElementById('controls-content')
-  const isControlsVisible = controlsContent.classList.contains('visible')
   const frame = canvas.closest('.canvas-frame') || canvas.parentElement || canvas
   const width = Math.max(320, Math.floor(frame.clientWidth || window.innerWidth))
-  const heightRatio = isControlsVisible ? 0.62 : 0.72
-  const height = Math.max(320, Math.floor(window.innerHeight * heightRatio))
+  const height = Math.max(320, Math.min(width, 920))
 
   return { width, height }
 }
